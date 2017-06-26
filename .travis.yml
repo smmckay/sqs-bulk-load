@@ -1,0 +1,13 @@
+language: cpp
+dist: trusty
+sudo: false
+compiler:
+  - clang
+  - gcc
+script: cmake . && make
+addons:
+  apt:
+    packages:
+    - libboost-all-dev
+    - zlib1g-dev
+    - libcurl4-openssl-dev
