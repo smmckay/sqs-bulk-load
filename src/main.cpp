@@ -22,7 +22,7 @@
 namespace po = boost::program_options;
 
 int main(int argc, const char *const *argv) {
-    int worker_count;
+    unsigned int worker_count;
     std::string queue_url, msg_filename, region;
 
     po::options_description desc("Allowed options");
@@ -58,7 +58,7 @@ int main(int argc, const char *const *argv) {
     client_config.region = region.c_str();
     Aws::SQS::SQSClient sqs(client_config);
 
-    boost::asio::io_service io_service;
+    boost::asio::io_service io_service(worker_count);
     boost::thread_group thread_group;
     long message_count = 0;
     {
@@ -71,13 +71,21 @@ int main(int argc, const char *const *argv) {
 
         std::ifstream infile(msg_filename);
         while (infile.good()) {
-            std::shared_ptr<std::string> line = std::make_shared<std::string>();
+            auto line = std::make_shared<std::string>();
             std::getline(infile, *line);
+            if (line->length() == 0 || line->at(0) == '#') {
+                continue;
+            }
+
             io_service.post([line, &queue_url, &sqs]() {
                 Aws::SQS::Model::SendMessageRequest sm_req;
-                sm_req.SetMessageBody((*line).c_str());
+                sm_req.SetMessageBody(line->c_str());
                 sm_req.SetQueueUrl(queue_url.c_str());
-                sqs.SendMessage(sm_req);
+                auto result = sqs.SendMessage(sm_req);
+                if (!result.IsSuccess()) {
+                    auto err = result.GetError();
+                    std::cerr << "Send message failed, code " << err.GetResponseCode() << ": " << err.GetMessage() << std::endl;
+                }
             });
 
             if (++message_count % 1000 == 0) {
@@ -85,7 +93,9 @@ int main(int argc, const char *const *argv) {
             }
         }
 
-        std::cout << "Read " << message_count << " messages" << std::endl;
+        if (message_count % 1000 != 0) {
+            std::cout << "Read " << message_count << " messages" << std::endl;
+        }
     }
 
     Aws::ShutdownAPI(options);
