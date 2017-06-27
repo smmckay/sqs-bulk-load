@@ -10,11 +10,10 @@ find_package(Boost 1.54.0 REQUIRED COMPONENTS program_options thread system)
 
 set(SOURCE_FILES src/main.cpp)
 add_executable(sqs_bulk_load ${SOURCE_FILES})
-target_include_directories(sqs_bulk_load PRIVATE ${Boost_INCLUDE_DIRS})
 target_link_libraries(sqs_bulk_load
         aws-cpp-sdk-sqs
         aws-cpp-sdk-core
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
-        ${Boost_THREAD_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
+        Boost::boost
+        Boost::program_options
+        Boost::thread
         )
