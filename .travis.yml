@@ -11,3 +11,4 @@ addons:
     - libboost-all-dev
     - zlib1g-dev
     - libcurl4-openssl-dev
+    - cmake3
