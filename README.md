@@ -6,5 +6,6 @@ Load a big pile of messages from a file to SQS.
 
 ### Building
 
-You will need cmake 2.8+, a compiler supporting C++11 (gcc and clang are tested), zlib, libcurl, and boost. On Ubuntu
-Trusty the correct library packages are libboost-all-dev, zlib1g-dev, and libcurl4-gnutls-dev.
+You will need cmake 3.5+, a compiler supporting C++11 (gcc and clang are tested), zlib, libcurl, openssl (on Linux) and
+boost. On Ubuntu Trusty the correct library packages are libboost-all-dev, zlib1g-dev, libssl-dev, and
+libcurl4-openssl-dev.
