@@ -84,7 +84,7 @@ int main(int argc, const char *const *argv) {
                 auto result = sqs.SendMessage(sm_req);
                 if (!result.IsSuccess()) {
                     auto err = result.GetError();
-                    std::cerr << "Send message failed, code " << err.GetResponseCode() << ": " << err.GetMessage() << std::endl;
+                    std::cerr << "Send message failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl;
                 }
             });
 
