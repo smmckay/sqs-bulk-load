@@ -6,7 +6,7 @@ set(BUILD_SHARED_LIBS OFF)
 set(ENABLE_UNITY_BUILD ON)
 
 add_subdirectory(lib/aws-sdk-cpp EXCLUDE_FROM_ALL)
-find_package(Boost 1.54.0 REQUIRED COMPONENTS program_options thread)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS program_options thread system)
 
 set(SOURCE_FILES src/main.cpp)
 add_executable(sqs_bulk_load ${SOURCE_FILES})
