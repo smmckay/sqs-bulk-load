@@ -61,6 +61,7 @@ int main(int argc, const char *const *argv) {
     boost::asio::io_service io_service(worker_count);
     boost::thread_group thread_group;
     long message_count = 0;
+    std::atomic_uint_fast64_t sent;
     {
         tg_joiner joiner(thread_group);
         boost::asio::io_service::work work(io_service);
@@ -77,7 +78,7 @@ int main(int argc, const char *const *argv) {
                 continue;
             }
 
-            io_service.post([line, &queue_url, &sqs]() {
+            io_service.post([line, &queue_url, &sqs, &sent]() {
                 Aws::SQS::Model::SendMessageRequest sm_req;
                 sm_req.SetMessageBody(line->c_str());
                 sm_req.SetQueueUrl(queue_url.c_str());
@@ -85,6 +86,11 @@ int main(int argc, const char *const *argv) {
                 if (!result.IsSuccess()) {
                     auto err = result.GetError();
                     std::cerr << "Send message failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl;
+                } else {
+                    auto v = sent.fetch_add(1, std::memory_order_relaxed) + 1;
+                    if (v % 1000 == 0) {
+                        std::cout << "Sent " << v << " messages" << std::endl;
+                    }
                 }
             });
 
@@ -96,6 +102,11 @@ int main(int argc, const char *const *argv) {
         if (message_count % 1000 != 0) {
             std::cout << "Read " << message_count << " messages" << std::endl;
         }
+    }
+
+    auto v = sent.load(std::memory_order_relaxed);
+    if (v % 1000 != 0) {
+        std::cout << "Sent " << v << " messages" << std::endl;
     }
 
     Aws::ShutdownAPI(options);
