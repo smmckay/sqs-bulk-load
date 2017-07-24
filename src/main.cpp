@@ -115,7 +115,8 @@ int main(int argc, const char *const *argv) {
                 }
             });
 
-            if (++message_count % 1000 == 0) {
+            message_count += lines->size();
+            if (message_count % 1000 == 0) {
                 std::cout << "Read " << message_count << " messages" << std::endl;
             }
         } while (infile.good());
