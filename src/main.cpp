@@ -85,7 +85,8 @@ int main(int argc, const char *const *argv) {
                 auto result = sqs.SendMessage(sm_req);
                 if (!result.IsSuccess()) {
                     auto err = result.GetError();
-                    std::cerr << "Send message failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl;
+                    std::cerr << "Send message failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl
+                              << "Message was " << line << std::endl;
                 } else {
                     auto v = sent.fetch_add(1, std::memory_order_relaxed) + 1;
                     if (v % 1000 == 0) {
