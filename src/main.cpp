@@ -10,7 +10,7 @@
 
 #include <aws/core/Aws.h>
 #include <aws/sqs/SQSClient.h>
-#include <aws/sqs/model/SendMessageRequest.h>
+#include <aws/sqs/model/SendMessageBatchRequest.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
 #include <boost/program_options.hpp>
@@ -71,24 +71,44 @@ int main(int argc, const char *const *argv) {
         }
 
         std::ifstream infile(msg_filename);
-        while (infile.good()) {
-            auto line = std::make_shared<std::string>();
-            std::getline(infile, *line);
-            if (line->length() == 0 || line->at(0) == '#') {
-                continue;
+        do {
+            auto lines = std::make_shared<std::vector<std::string>>();
+            while (infile.good() && lines->size() < 10) {
+                std::string line;
+                std::getline(infile, line);
+                if (line.length() == 0 || line.at(0) == '#') {
+                    continue;
+                }
+                lines->push_back(std::move(line));
             }
 
-            io_service.post([line, &queue_url, &sqs, &sent]() {
-                Aws::SQS::Model::SendMessageRequest sm_req;
-                sm_req.SetMessageBody(line->c_str());
-                sm_req.SetQueueUrl(queue_url.c_str());
-                auto result = sqs.SendMessage(sm_req);
+            if (lines->empty()) {
+                break;
+            }
+
+            io_service.post([lines, &queue_url, &sqs, &sent]() {
+                Aws::SQS::Model::SendMessageBatchRequest smb_req;
+                smb_req.SetQueueUrl(queue_url.c_str());
+                for (int i = 0; i < lines->size(); ++i) {
+                    auto&& line = lines->at(i);
+                    std::ostringstream id_stream;
+                    id_stream << i;
+
+                    Aws::SQS::Model::SendMessageBatchRequestEntry entry;
+                    entry.SetId(id_stream.str().c_str());
+                    entry.SetMessageBody(line.c_str());
+                    smb_req.AddEntries(std::move(entry));
+                }
+
+                auto result = sqs.SendMessageBatch(smb_req);
                 if (!result.IsSuccess()) {
                     auto err = result.GetError();
-                    std::cerr << "Send message failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl
-                              << "Message was " << line->c_str() << std::endl;
+                    std::cerr << "Send message batch failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl;
+                    for (auto&& line : *lines) {
+                        std::cerr << "Message was " << line.c_str() << std::endl;
+                    }
                 } else {
-                    auto v = sent.fetch_add(1, std::memory_order_relaxed) + 1;
+                    auto v = sent.fetch_add(lines->size(), std::memory_order_relaxed) + lines->size();
                     if (v % 1000 == 0) {
                         std::cout << "Sent " << v << " messages" << std::endl;
                     }
@@ -98,7 +118,7 @@ int main(int argc, const char *const *argv) {
             if (++message_count % 1000 == 0) {
                 std::cout << "Read " << message_count << " messages" << std::endl;
             }
-        }
+        } while (infile.good());
 
         if (message_count % 1000 != 0) {
             std::cout << "Read " << message_count << " messages" << std::endl;
