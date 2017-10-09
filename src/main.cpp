@@ -49,7 +49,6 @@ int main(int argc, const char *const *argv) {
         return 1;
     }
 
-
     Aws::SDKOptions options;
     options.httpOptions.installSigPipeHandler = true;
     Aws::InitAPI(options);
@@ -89,7 +88,7 @@ int main(int argc, const char *const *argv) {
             io_service.post([lines, &queue_url, &sqs, &sent]() {
                 Aws::SQS::Model::SendMessageBatchRequest smb_req;
                 smb_req.SetQueueUrl(queue_url.c_str());
-                for (int i = 0; i < lines->size(); ++i) {
+                for (unsigned long i = 0; i < lines->size(); ++i) {
                     auto&& line = lines->at(i);
                     std::ostringstream id_stream;
                     id_stream << i;
@@ -102,13 +101,13 @@ int main(int argc, const char *const *argv) {
 
                 auto result = sqs.SendMessageBatch(smb_req);
                 if (!result.IsSuccess()) {
-                    auto err = result.GetError();
+                    const auto& err = result.GetError();
                     std::cerr << "Send message batch failed, code " << static_cast<int>(err.GetResponseCode()) << ": " << err.GetMessage() << std::endl;
                     for (auto&& line : *lines) {
                         std::cerr << "Message was " << line.c_str() << std::endl;
                     }
                 } else {
-                    auto v = sent.fetch_add(lines->size(), std::memory_order_relaxed) + lines->size();
+                    auto v = sent.fetch_add(lines->size()) + lines->size();
                     if (v % 1000 == 0) {
                         std::cout << "Sent " << v << " messages" << std::endl;
                     }
@@ -126,7 +125,7 @@ int main(int argc, const char *const *argv) {
         }
     }
 
-    auto v = sent.load(std::memory_order_relaxed);
+    auto v = sent.load();
     if (v % 1000 != 0) {
         std::cout << "Sent " << v << " messages" << std::endl;
     }
