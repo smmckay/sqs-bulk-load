@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(sqs_bulk_load)
 
 set(CMAKE_CXX_STANDARD 11)
-set(BUILD_SHARED_LIBS OFF)
-set(ENABLE_UNITY_BUILD ON)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "build AWS SDK shared" FORCE)
+set(ENABLE_UNITY_BUILD ON CACHE BOOL "unity build for AWS SDK" FORCE)
 
 add_subdirectory(lib/aws-sdk-cpp EXCLUDE_FROM_ALL)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS program_options thread system)
