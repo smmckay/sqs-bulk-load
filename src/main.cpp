@@ -60,7 +60,7 @@ int main(int argc, const char *const *argv) {
     boost::asio::io_service io_service(worker_count);
     boost::thread_group thread_group;
     long message_count = 0;
-    std::atomic_uint_fast64_t sent;
+    std::atomic_uint_fast64_t sent(0);
     {
         tg_joiner joiner(thread_group);
         boost::asio::io_service::work work(io_service);
